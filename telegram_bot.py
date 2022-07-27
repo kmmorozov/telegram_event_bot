@@ -2,6 +2,18 @@ import telebot
 from telebot import types
 from dotenv import load_dotenv
 import os
+import sqlite3
+from datetime import datetime
+
+
+def is_event_today():
+    con = sqlite3.connect('tbot.sqlite3')
+    cursor = con.cursor()
+    today = datetime.now().strftime('%Y%m%d')
+    cursor.execute('select event_id,name from events where event_date = {}'.format(today))
+    cursor_data = cursor.fetchall()
+    return cursor_data
+
 
 load_dotenv()
 token = os.getenv("TELEGRAM_TOKEN")
@@ -13,7 +25,12 @@ timetable = 'Следующая лекция в сентябре!!'
 def start_message(message):
     user_id = message.from_user.id
     user_name = message.from_user.username
-    bot.send_message(message.chat.id, 'Привет')
+    try:
+        event_name = is_event_today()[0][1]
+        bot.send_message(message.chat.id, 'Привет, сегодня проходит мероприятие {}'.format(event_name))
+    except IndexError:
+        bot.send_message(message.chat.id, 'Привет, сегодня мероприятие не проходит')
+
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Посмотреть расписание")
     markup.add(item1)
