@@ -11,9 +11,11 @@ timetable = 'Следующая лекция в сентябре!!'
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
+    user_id = message.from_user.id
+    user_name = message.from_user.username
     bot.send_message(message.chat.id, 'Привет')
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton("Посмотпеть расписание")
+    item1 = types.KeyboardButton("Посмотреть расписание")
     markup.add(item1)
     item2 = types.KeyboardButton("Отправить письмо Лектору")
     markup.add(item2)
@@ -21,6 +23,8 @@ def start_message(message):
     markup.add(item3)
     item4 = types.KeyboardButton("Где у Электроника кнопка?")
     markup.add(item4)
+    print(user_name)
+    print(user_id)
 
     bot.send_message(message.chat.id, 'Выберите нужный пункт меню', reply_markup=markup)
 
@@ -29,7 +33,7 @@ def start_message(message):
 def message_reply(message):
     if message.text == "Отправить письмо Лектору":
         bot.send_message(message.chat.id, "Ури, Сегодня только фуршет!!!)))")
-    if message.text == "Посмотпеть расписание":
+    if message.text == "Посмотреть расписание":
         bot.send_message(message.chat.id, text=timetable)
     if message.text == "Спикеры на сегодня":
         bot.send_message(message.chat.id, text='Список пока не определен')
@@ -39,6 +43,7 @@ def message_reply(message):
         keyboard.add(key_yes)
         key_no = types.InlineKeyboardButton(text='Нет', callback_data='no')
         keyboard.add(key_no)
+
         bot.send_message(message.from_user.id, text="Хочешь ссылку на фильм?", reply_markup=keyboard)
 
 
