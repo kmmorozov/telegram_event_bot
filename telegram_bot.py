@@ -1,22 +1,10 @@
 import json
 import os
 
-import sqlite3
-
-from datetime import datetime
-
 from dotenv import load_dotenv
 from telebot import TeleBot
 from telebot import types
-
-
-def is_event_today():
-    con = sqlite3.connect('tbot.sqlite3')
-    cursor = con.cursor()
-    today = datetime.now().strftime('%Y%m%d')
-    cursor.execute('select event_id,name from events where event_date = {}'.format(today))
-    cursor_data = cursor.fetchall()
-    return cursor_data
+from telebot.apihelper import ApiTelegramException
 
 
 NOT_FOUND_MESSAGE = 'Информация не найдена'
@@ -34,17 +22,10 @@ timetable = 'Следующая лекция в сентябре!!'
 def start_message(message):
     user_id = message.from_user.id
     user_name = message.from_user.username
-    
-    
+
     bot_command = types.BotCommand('start', 'Стартовая страница')
     command_scope = types.BotCommandScopeChat(message.chat.id)
     bot.set_my_commands([bot_command], command_scope)
-    
-    try:
-        event_name = is_event_today()[0][1]
-        bot.send_message(message.chat.id, 'Привет, сегодня проходит мероприятие {}'.format(event_name))
-    except IndexError:
-        bot.send_message(message.chat.id, 'Привет, сегодня мероприятие не проходит')
 
     button = types.InlineKeyboardButton('Главное меню', callback_data='menu')
     markup = types.InlineKeyboardMarkup()
@@ -142,13 +123,45 @@ def callback_worker(call):
                 if block['speakers']:
                     for speaker in block['speakers']:
                         if call.data == speaker['id']:
-                            speaker_answer = bot.send_message(call.message.chat.id, text='Введите вопрос докладчику:')
-                            bot.register_next_step_handler(speaker_answer, send_message_to_speaker, speaker['speaker_id'])
+                            speaker_answer = bot.send_message(call.message.chat.id, text='Введите вопрос спикеру:')
+                            bot.register_next_step_handler(speaker_answer, confirm_send_message, speaker['speaker_id'])
 
 
+def confirm_send_message(message: types.Message, speaker_id):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button1 = types.KeyboardButton('Да')
+    button2 = types.KeyboardButton('Нет')
+    markup.add(button1, button2)
 
-def send_message_to_speaker(message, chat_id):
-    bot.send_message(chat_id, message.text)
+    confirmation = bot.send_message(message.chat.id, text='Отправить сообщение?', reply_markup=markup)
+    bot.register_next_step_handler(confirmation, send_message_to_speaker, message, speaker_id)
+
+
+def send_message_to_speaker(message, answer, chat_id):
+    if message.text == 'Да':
+        try:
+            bot.send_message(
+                chat_id,
+                f'From: @{answer.from_user.username}\n{answer.text}'
+            )
+            bot.send_message(
+                message.chat.id,
+                'Сообщение отправлено',
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+        except ApiTelegramException:
+            bot.send_message(
+                message.chat.id,
+                'Ошибка сервера. \nПожалуйста, повторите позднее.',
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+
+    elif message.text == 'Нет':
+        bot.send_message(
+            message.chat.id,
+            'Сообщение не отправлено',
+            reply_markup=types.ReplyKeyboardRemove()
+        )
 
 
 bot.infinity_polling()
