@@ -1,9 +1,22 @@
 import json
 import os
 
+import sqlite3
+
+from datetime import datetime
+
 from dotenv import load_dotenv
 from telebot import TeleBot
 from telebot import types
+
+
+def is_event_today():
+    con = sqlite3.connect('tbot.sqlite3')
+    cursor = con.cursor()
+    today = datetime.now().strftime('%Y%m%d')
+    cursor.execute('select event_id,name from events where event_date = {}'.format(today))
+    cursor_data = cursor.fetchall()
+    return cursor_data
 
 
 NOT_FOUND_MESSAGE = 'Информация не найдена'
@@ -21,10 +34,17 @@ timetable = 'Следующая лекция в сентябре!!'
 def start_message(message):
     user_id = message.from_user.id
     user_name = message.from_user.username
-
+    
+    
     bot_command = types.BotCommand('start', 'Стартовая страница')
     command_scope = types.BotCommandScopeChat(message.chat.id)
     bot.set_my_commands([bot_command], command_scope)
+    
+    try:
+        event_name = is_event_today()[0][1]
+        bot.send_message(message.chat.id, 'Привет, сегодня проходит мероприятие {}'.format(event_name))
+    except IndexError:
+        bot.send_message(message.chat.id, 'Привет, сегодня мероприятие не проходит')
 
     button = types.InlineKeyboardButton('Главное меню', callback_data='menu')
     markup = types.InlineKeyboardMarkup()
@@ -129,7 +149,6 @@ def callback_worker(call):
 
 def send_message_to_speaker(message, chat_id):
     bot.send_message(chat_id, message.text)
-
 
 
 bot.infinity_polling()
