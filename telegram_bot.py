@@ -1,9 +1,6 @@
 import json
 import os
 
-
-from collections import deque
-
 from dotenv import load_dotenv
 from telebot import TeleBot
 from telebot import types
@@ -19,8 +16,6 @@ token = os.getenv("TELEGRAM_TOKEN")
 bot = TeleBot(token)
 timetable = 'Следующая лекция в сентябре!!'
 
-delete_message_query = deque()
-
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -35,7 +30,6 @@ def start_message(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(button)
     bot.send_message(message.chat.id, reply_markup=markup, text='Привет!\nИнфо о боте')
-    delete_message_query.append(message.id)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -45,7 +39,13 @@ def callback_worker(call):
     if call.data == "program":
 
         for event in events_dict:
-            markup.add(types.InlineKeyboardButton(event['name'], callback_data=event['id']))
+            markup.add(
+                types.InlineKeyboardButton(
+                    event['name'],
+                    callback_data=f'program_{event["id"]}'
+                )
+            )
+
         markup.add(types.InlineKeyboardButton('Главное меню', callback_data='menu'))
 
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Программа')
@@ -58,24 +58,78 @@ def callback_worker(call):
 
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Главное меню')
 
-    for event in events_dict:
-        if call.data == event['id']:
+    elif call.data == 'ask_speaker':
+        for event in events_dict:
+            markup.add(
+                types.InlineKeyboardButton(
+                    event['name'],
+                    callback_data=f'ask_speaker_{event["id"]}'
+                )
+            )
+
+        markup.add(types.InlineKeyboardButton('Главное меню', callback_data='menu'))
+
+        bot.send_message(call.message.chat.id, reply_markup=markup, text='Задать вопрос спикеру')
+
+    else:
+        for event in events_dict:
+            if call.data == f'program_{event["id"]}':
+                for block in event['blocks']:
+                    markup.add(
+                        types.InlineKeyboardButton(
+                            block['name'],
+                            callback_data=f'program_{block["id"]}'
+                        )
+                    )
+
+                markup.add(types.InlineKeyboardButton('Назад', callback_data='program'))
+                bot.send_message(call.message.chat.id, reply_markup=markup, text=event['name'])
+
+            elif call.data == f'ask_speaker_{event["id"]}':
+                for block in event['blocks']:
+                    markup.add(
+                        types.InlineKeyboardButton(
+                            f'{block["start_time"]} - {block["end_time"]}',
+                            callback_data=f'ask_speaker_{block["id"]}'
+                        )
+                    )
+
+                markup.add(types.InlineKeyboardButton('Назад', callback_data='ask_speaker'))
+                bot.send_message(call.message.chat.id, reply_markup=markup, text=event['name'])
+
             for block in event['blocks']:
-                markup.add(types.InlineKeyboardButton(block['name'], callback_data=block['id']))
-            markup.add(types.InlineKeyboardButton('Назад', callback_data='program'))
-            bot.send_message(call.message.chat.id, reply_markup=markup, text=event['name'])
+                if call.data == f'program_{block["id"]}':
+                    markup.add(types.InlineKeyboardButton('Назад', callback_data=f'program_{event["id"]}'))
+                    text = block.get('text') or NOT_FOUND_MESSAGE
+                    bot.send_message(call.message.chat.id, reply_markup=markup, text=text)
 
-        for block in event['blocks']:
-            if call.data == block['id']:
-                markup.add(types.InlineKeyboardButton('Назад', callback_data=event['id']))
-                text = block.get('text') or NOT_FOUND_MESSAGE
-                bot.send_message(call.message.chat.id, reply_markup=markup, text=text)
+                elif call.data == f'ask_speaker_{block["id"]}':
+                    for speaker in block['speakers']:
+                        markup.add(
+                            types.InlineKeyboardButton(
+                                f'{speaker["speaker_id"]} - {speaker["name"]}',
+                                callback_data=speaker["id"]
+                            )
+                        )
 
-    delete_message_query.append(call.message.id)
+                    markup.add(types.InlineKeyboardButton('Назад', callback_data=f'ask_speaker_{event["id"]}'))
+                    bot.send_message(
+                        call.message.chat.id,
+                        reply_markup=markup,
+                        text=f'{block["start_time"]} - {block["end_time"]}'
+                    )
 
-    while len(delete_message_query) > 0:
-        delete = delete_message_query.popleft()
-        bot.delete_message(call.message.chat.id, delete)
+                if block['speakers']:
+                    for speaker in block['speakers']:
+                        if call.data == speaker['id']:
+                            speaker_answer = bot.send_message(call.message.chat.id, text='Введите вопрос докладчику:')
+                            bot.register_next_step_handler(speaker_answer, send_message_to_speaker, speaker['speaker_id'])
+
+
+
+def send_message_to_speaker(message, chat_id):
+    bot.send_message(chat_id, message.text)
+
 
 
 bot.infinity_polling()
