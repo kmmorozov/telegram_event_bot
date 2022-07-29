@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from dotenv import load_dotenv
 from telebot import TeleBot
@@ -126,6 +127,10 @@ def callback_worker(call):
                             speaker_answer = bot.send_message(call.message.chat.id, text='Введите вопрос спикеру:')
                             bot.register_next_step_handler(speaker_answer, confirm_send_message, speaker['speaker_id'])
 
+    if rexp := re.search(r'^id_(\d+)$', call.data):
+        answer_to_user = bot.send_message(call.message.chat.id, text='Введите ответ пользователю:')
+        bot.register_next_step_handler(answer_to_user, confirm_send_message, rexp.group(1))
+
 
 def confirm_send_message(message: types.Message, speaker_id):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -140,9 +145,13 @@ def confirm_send_message(message: types.Message, speaker_id):
 def send_message_to_speaker(message, answer, chat_id):
     if message.text == 'Да':
         try:
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton('Ответить', callback_data=f'id_{message.chat.id}'))
+
             bot.send_message(
                 chat_id,
-                f'From: @{answer.from_user.username}\n{answer.text}'
+                answer.text,
+                reply_markup=markup
             )
             bot.send_message(
                 message.chat.id,
