@@ -7,6 +7,7 @@ from telebot import TeleBot
 from telebot import types
 from telebot.apihelper import ApiTelegramException
 
+provider_token = '401643678:TEST:be4a760d-8923-4203-877b-faf0f99a2aba'
 
 NOT_FOUND_MESSAGE = 'Информация не найдена'
 
@@ -16,7 +17,6 @@ with open('./example.json', 'rb') as file:
 load_dotenv()
 token = os.getenv("TELEGRAM_TOKEN")
 bot = TeleBot(token)
-timetable = 'Следующая лекция в сентябре!!'
 
 
 @bot.message_handler(commands=['start'])
@@ -32,6 +32,7 @@ def start_message(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(button)
     bot.send_message(message.chat.id, reply_markup=markup, text='Привет!\nИнфо о боте')
+
 
 
 @bot.callback_query_handler(func=lambda call: True)

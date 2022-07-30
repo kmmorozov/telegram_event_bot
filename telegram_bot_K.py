@@ -55,8 +55,8 @@ def callback_worker(call):
     elif call.data == "menu":
         button1 = types.InlineKeyboardButton('Программа', callback_data='program')
         button2 = types.InlineKeyboardButton('Задать вопрос спикеру', callback_data='ask_speaker')
-
-        markup.add(button1, button2)
+        button3 = types.InlineKeyboardButton('Сделать донат', callback_data='donate')
+        markup.add(button1, button2, button3)
 
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Главное меню')
 
@@ -72,6 +72,9 @@ def callback_worker(call):
         markup.add(types.InlineKeyboardButton('Главное меню', callback_data='menu'))
 
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Задать вопрос спикеру')
+
+    elif call.data == 'donate':
+        pass
 
     else:
         for event in events_dict:
@@ -129,13 +132,12 @@ def callback_worker(call):
 
     if rexp := re.search(r'^id_(\d+)$', call.data):
 
+
         answer_to_user = bot.send_message(call.message.chat.id, text='Введите ответ пользователю:')
         # print(answer_to_user)
         # print(confirm_send_message())
         # print(rexp.group(1))
         bot.register_next_step_handler(answer_to_user, confirm_send_message_user, rexp.group(1))
-
-
 
 
 def confirm_send_message(message: types.Message, speaker_id):
