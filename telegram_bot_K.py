@@ -8,7 +8,7 @@ from telebot import types
 from telebot.apihelper import ApiTelegramException
 
 provider_token = '401643678:TEST:be4a760d-8923-4203-877b-faf0f99a2aba'
-prices = [LabeledPrice(label='На развитие', amount=5751), LabeledPrice('На бухло', 500)]
+prices = [LabeledPrice(label='На развитие', amount=1000), LabeledPrice('На бухло', 200)]
 NOT_FOUND_MESSAGE = 'Информация не найдена'
 
 shipping_options = [
@@ -90,7 +90,8 @@ def callback_worker(call):
             provider_token,  # provider_token
             'usd',  # currency
             prices,  # prices
-            photo_url='http://erkelzaar.tsudao.com/models/perrotta/TIME_MACHINE.jpg',
+            #photo_url='http://erkelzaar.tsudao.com/models/perrotta/TIME_MACHINE.jpg',
+            photo_url = 'https://nadejnei.net/chuk.jpg',
             photo_height=512,  # !=0/None or picture won't be shown
             photo_width=512,
             photo_size=512,
