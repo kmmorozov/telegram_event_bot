@@ -60,9 +60,9 @@ def callback_worker(call):
 
     elif call.data == "menu":
         button1 = types.InlineKeyboardButton('Программа', callback_data='program')
-        button2 = types.InlineKeyboardButton('Задать вопрос спикеру', callback_data='ask_speaker')
-        button3 = types.InlineKeyboardButton('Сделать донат', callback_data='donate')
-        markup.add(button1, button2, button3)
+        button3 = types.InlineKeyboardButton('Задать вопрос спикеру', callback_data='ask_speaker')
+        button2 = types.InlineKeyboardButton('Отправить донат', callback_data='donate')
+        markup.add(button1, button2, button3, row_width=2)
 
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Главное меню')
 
