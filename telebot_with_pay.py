@@ -20,9 +20,6 @@ bot = TeleBot(token)
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    user_id = message.from_user.id
-    user_name = message.from_user.username
-
     bot_command = types.BotCommand('start', 'Стартовая страница')
     command_scope = types.BotCommandScopeChat(message.chat.id)
     bot.set_my_commands([bot_command], command_scope)
@@ -30,7 +27,7 @@ def start_message(message):
     button = types.InlineKeyboardButton('Главное меню', callback_data='menu')
     markup = types.InlineKeyboardMarkup()
     markup.add(button)
-    bot.send_message(message.chat.id, reply_markup=markup, text='Привет!\nИнфо о боте')
+    bot.send_message(message.chat.id, reply_markup=markup, text='Привет!\nБот упростит навигацию по мероприятию')
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -73,8 +70,15 @@ def callback_worker(call):
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Задать вопрос спикеру')
 
     elif call.data == 'donate':
-        print(call.message.chat.id)
-        prices = [LabeledPrice(label='На развитие', amount=5751)]
+        # button1 = types.InlineKeyboardButton('100', callback_data='100')
+        # button3 = types.InlineKeyboardButton('500', callback_data='500')
+        # button2 = types.InlineKeyboardButton('1000', callback_data='1000')
+        # button4 = types.InlineKeyboardButton('10000', callback_data='10000')
+        # button5 = types.InlineKeyboardButton('Вернуться в главное меню', callback_data='menu')
+        # markup.add(button1, button2, button3, button4, button5, row_width=2)
+        # bot.send_message(call.message.chat.id, reply_markup=markup, text='На какую суммубудет донат?')
+        # print(call.message.chat.id)
+        prices = [LabeledPrice(label='На развитие', amount=5678990)]
         bot.send_invoice(
             call.message.chat.id,  # chat_id
             'На развитие бота',  # title
