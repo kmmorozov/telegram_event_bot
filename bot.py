@@ -143,7 +143,11 @@ def callback_worker(call):
                     for speaker in block['speakers']:
                         if call.data == speaker['id']:
                             speaker_question = bot.send_message(call.message.chat.id, text='Введите вопрос спикеру:')
-                            bot.register_next_step_handler(speaker_question, confirm_send_message, speaker['speaker_id'])
+                            bot.register_next_step_handler(
+                                speaker_question,
+                                confirm_send_message,
+                                speaker['speaker_id'],
+                            )
 
 
 def confirm_send_message(message: types.Message, speaker_id, role='speaker'):
@@ -180,7 +184,6 @@ def send_message(message, answer, chat_id, role='speaker'):
                 'Ошибка сервера. \nПожалуйста, повторите позднее.',
                 reply_markup=types.ReplyKeyboardRemove()
             )
-
 
     elif message.text == 'Нет':
         bot.send_message(
@@ -232,11 +235,15 @@ def pay_donate(message, amount):
 
     @bot.message_handler(content_types=['successful_payment'])
     def got_payment(message):
-        bot.send_message(message.chat.id,
-                         'Спасибо за ваш донат! Ваше пожертвование в размере `{} {}` пойдет на добрые дела! '
-                         .format(
-                             message.successful_payment.total_amount / 100, message.successful_payment.currency),
-                          parse_mode='Markdown')
+        bot.send_message(
+            message.chat.id,
+            'Спасибо за ваш донат! Ваше пожертвование в размере `{} {}` пойдет на добрые дела! '
+                .format(
+                message.successful_payment.total_amount / 100,
+                message.successful_payment.currency,
+            ),
+            parse_mode='Markdown'
+        )
 
 
 bot.infinity_polling()
