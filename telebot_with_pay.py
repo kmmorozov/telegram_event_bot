@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from telebot.types import LabeledPrice, ShippingOption
+from telebot.types import LabeledPrice
 from dotenv import load_dotenv
 from telebot import TeleBot
 from telebot import types
@@ -27,7 +27,7 @@ def start_message(message):
     button = types.InlineKeyboardButton('Главное меню', callback_data='menu')
     markup = types.InlineKeyboardMarkup()
     markup.add(button)
-    bot.send_message(message.chat.id, reply_markup=markup, text='Привет!\nБот упростит навигацию по мероприятию')
+    bot.send_message(message.chat.id, reply_markup=markup, text='Привет! \nБот упростит навигацию по мероприятию')
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -70,25 +70,31 @@ def callback_worker(call):
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Задать вопрос спикеру')
 
     elif call.data == 'donate':
-        # button1 = types.InlineKeyboardButton('100', callback_data='100')
-        # button3 = types.InlineKeyboardButton('500', callback_data='500')
-        # button2 = types.InlineKeyboardButton('1000', callback_data='1000')
-        # button4 = types.InlineKeyboardButton('10000', callback_data='10000')
-        # button5 = types.InlineKeyboardButton('Вернуться в главное меню', callback_data='menu')
-        # markup.add(button1, button2, button3, button4, button5, row_width=2)
-        # bot.send_message(call.message.chat.id, reply_markup=markup, text='На какую суммубудет донат?')
-        # print(call.message.chat.id)
-        prices = [LabeledPrice(label='На развитие', amount=5678990)]
+        button1 = types.InlineKeyboardButton('100', callback_data='100')
+        button2 = types.InlineKeyboardButton('500', callback_data='500')
+        button3 = types.InlineKeyboardButton(
+            'Вернуться в главное меню',
+            callback_data='menu'
+        )
+        markup.add(button1, button2, button3, row_width=2)
+        bot.send_message(
+            call.message.chat.id,
+            reply_markup=markup,
+            text='На какую сумму будет донат?'
+        )
+
+    elif call.data == '100':
+        prices = [LabeledPrice(label='Тестовый платеж', amount=10000)]
         bot.send_invoice(
             call.message.chat.id,  # chat_id
-            'На развитие бота',  # title
-            'Вы донатите на развитие нашего бота и нашего бесплатного MeetUP',
+            'Тестовый донат на развитие бота',  # title
+            'Мы хотим продемонстрировать возможности бота, меню "Отправить донат" может содержать нужные вам настройки',
             'HAPPY FRIDAYS COUPON',  # invoice_payload
             provider_token,  # provider_token
             'rub',
             prices,
             is_flexible=False,
-            start_parameter='time-machine-example')
+            start_parameter='MeetBot')
 
         @bot.pre_checkout_query_handler(func=lambda query: True)
         def checkout(pre_checkout_query):
@@ -106,6 +112,36 @@ def callback_worker(call):
         markup.add(types.InlineKeyboardButton('Главное меню', callback_data='menu'))
 
         bot.send_message(call.message.chat.id, reply_markup=markup, text='Или вернуться в главное меню.')
+    elif call.data == '500':
+        prices = [LabeledPrice(label='Тестовый платеж', amount=50000)]
+        bot.send_invoice(
+            call.message.chat.id,  # chat_id
+            'Тестовый донат на развитие бота',  # title
+            'Мы хотим продемонстрировать возможности бота, меню "Отправить донат" может содержать нужные вам настройки',
+            'HAPPY FRIDAYS COUPON',  # invoice_payload
+            provider_token,  # provider_token
+            'rub',
+            prices,
+            is_flexible=False,
+            start_parameter='MeetBot')
+
+        @bot.pre_checkout_query_handler(func=lambda query: True)
+        def checkout(pre_checkout_query):
+            bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True,
+                                          error_message="Попробуйте еще раз оплатить через несколько минут.")
+
+        @bot.message_handler(content_types=['successful_payment'])
+        def got_payment(message):
+            bot.send_message(message.chat.id,
+                             'Спасибо за ваш донат! Ваше пожертвование в размере `{} {}` пойдет на добрые дела! '
+                             .format(
+                                 message.successful_payment.total_amount / 100, message.successful_payment.currency),
+                             parse_mode='Markdown')
+
+        markup.add(types.InlineKeyboardButton('Главное меню', callback_data='menu'))
+
+        bot.send_message(call.message.chat.id, reply_markup=markup, text='Или вернуться в главное меню.')
+
     else:
         for event in events_dict:
             if call.data == f'program_{event["id"]}':
@@ -162,9 +198,6 @@ def callback_worker(call):
 
     if rexp := re.search(r'^id_(\d+)$', call.data):
         answer_to_user = bot.send_message(call.message.chat.id, text='Введите ответ пользователю:')
-        # print(answer_to_user)
-        # print(confirm_send_message())
-        # print(rexp.group(1))
         bot.register_next_step_handler(answer_to_user, confirm_send_message_user, rexp.group(1))
 
 
@@ -183,7 +216,8 @@ def confirm_send_message_user(message: types.Message, speaker_id):
     button1 = types.KeyboardButton('Да')
     button2 = types.KeyboardButton('Нет')
     markup.add(button1, button2)
-
+    print(message.from_user)
+    message.text = f'Ответ от {message.from_user.full_name}:\n  {message.text}'
     confirmation = bot.send_message(message.chat.id, text='Отправить сообщение?', reply_markup=markup)
     bot.register_next_step_handler(confirmation, send_message_to_user, message, speaker_id)
 
@@ -204,12 +238,14 @@ def send_message_to_speaker(message, answer, chat_id):
                 'Сообщение отправлено',
                 reply_markup=types.ReplyKeyboardRemove()
             )
+
         except ApiTelegramException:
             bot.send_message(
                 message.chat.id,
                 'Ошибка сервера. \nПожалуйста, повторите позднее.',
                 reply_markup=types.ReplyKeyboardRemove()
             )
+
 
     elif message.text == 'Нет':
         bot.send_message(
@@ -223,13 +259,16 @@ def send_message_to_user(message, answer, chat_id):
     if message.text == 'Да':
         try:
             markup = types.InlineKeyboardMarkup()
-            # markup.add(types.InlineKeyboardButton('Ответить', callback_data=f'id_{message.chat.id}'))
+
+            button1 = types.InlineKeyboardButton('Главное меню', callback_data='menu')
+            markup.add(button1, row_width=1)
 
             bot.send_message(
                 chat_id,
                 answer.text,
                 reply_markup=markup
             )
+            print(type(answer.text))
             bot.send_message(
                 message.chat.id,
                 'Сообщение отправлено',
@@ -238,7 +277,7 @@ def send_message_to_user(message, answer, chat_id):
         except ApiTelegramException:
             bot.send_message(
                 message.chat.id,
-                'Ошибка сервера. \nПожалуйста, повторите позднее.',
+                'Ошибка сервера. \nПожалуйста, повторите позднее. ',
                 reply_markup=types.ReplyKeyboardRemove()
             )
 
