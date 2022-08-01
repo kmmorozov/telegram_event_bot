@@ -3,7 +3,6 @@ import os
 import re
 
 from dotenv import load_dotenv
-from telebot.types import LabeledPrice
 from telebot import TeleBot
 from telebot import types
 from telebot.apihelper import ApiTelegramException
@@ -29,7 +28,7 @@ def start_message(message):
     button = types.InlineKeyboardButton('Главное меню', callback_data='menu')
     markup = types.InlineKeyboardMarkup()
     markup.add(button)
-    bot.send_message(message.chat.id, reply_markup=markup, text='Привет!\nБот упростит навигацию по мероприятию')
+    bot.send_message(message.chat.id, reply_markup=markup, text='Привет! \nБот упростит навигацию по мероприятию')
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -174,12 +173,14 @@ def send_message(message, answer, chat_id, role='speaker'):
                 'Сообщение отправлено',
                 reply_markup=types.ReplyKeyboardRemove()
             )
+
         except ApiTelegramException:
             bot.send_message(
                 message.chat.id,
                 'Ошибка сервера. \nПожалуйста, повторите позднее.',
                 reply_markup=types.ReplyKeyboardRemove()
             )
+
 
     elif message.text == 'Нет':
         bot.send_message(
@@ -210,7 +211,7 @@ def pay_donate(message, amount):
         types.InlineKeyboardButton('Назад', callback_data='donate'),
     )
 
-    prices = [LabeledPrice(label='На развитие', amount=amount)]
+    prices = [types.LabeledPrice(label='На развитие', amount=amount)]
     bot.send_invoice(
         chat_id=message.chat.id,
         title='На развитие бота',
